@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(corrplot)
+library(ggthemes)
+library(grid)
 ```
 #Machine Learning Main Ideas
 ## Question 1
@@ -142,3 +144,34 @@ corrplot(mpg_cor, method = "square", type = "lower")
 ```
 
 Analysis: number of cylinders and engine displacement are positively correlated, which makes sense as larger engines would be expected to displace more fluid. Both MPGs (hwy, cty) were negatively correlated to number of cylinders and engine displacement, which again make sense as more fuel consumption implies lower mpg. Again, MPGs were strongly correlated with each other. year was essentilly unrelated to all other variables. This makes sense as well as the dataset only goes from 1999 to 2008, in which time there was limited change in typicaly vehicle fuel efficiency. 
+
+## Excercise 6
+### Recreate the following graphic, as closely as you can.
+
+```{r}
+ggplot(mpg_data, aes(x = hwy, y = class)) + 
+  geom_boxplot() + 
+  geom_point(alpha = 0.1, position=position_jitter(height=.35, width=0)) +
+  labs(x = "Highway MPG", y = "Vehicle Class") +
+  theme_bw() + 
+  scale_shape_cleveland() +
+  theme(axis.ticks = element_blank())
+```
+
+## Excercise 7
+### Recreate the following graphic.
+
+```{r}
+ggplot(mpg_data, aes(x = hwy, y = class, fill = drv)) + 
+  geom_boxplot() + 
+  coord_flip()
+```
+
+## Excercise 8
+### Recreate the following graphic
+
+```{r}
+ggplot(mpg_data, aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, color = "dodgerblue3", aes(linetype = drv))
+```
