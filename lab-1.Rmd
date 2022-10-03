@@ -1,0 +1,17 @@
+---
+title: "Lab 1"
+author: "Jaxon Stuhr"
+date: "2022-09-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidymodels)
+library(ISLR)
+```
+
+```{r}
+```
+

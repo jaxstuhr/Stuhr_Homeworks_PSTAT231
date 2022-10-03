@@ -1,0 +1,144 @@
+---
+title: 'Homework #1'
+author: "Jaxon Stuhr"
+date: "2022-10-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(corrplot)
+```
+#Machine Learning Main Ideas
+## Question 1
+### Define supervised and unsupervised learning. What are the difference(s) between them?
+Supervised learning occurs when a machine learning model is developed using a dataset that house both input and output values. The model tries to predict the output as a function of the inputs, and can be scored based on how good of a job it does against the true output values. 
+Unsupervised learning occurs when a machine learning model is developed using a dataset with only the input values (outputs are unknown). In this case, the model cannot be tested against any output data.
+
+Source: Lecture 1: Course overview and introduction
+
+## Question 2
+### Explain the difference between a regression model and a classification model, specifically in the context of machine learning.
+Regression models are quantitative classification models are categorical, meaning that the output value that a _regression_ model will use some input parameters to predict a continuous numerical output, while a _classification_ model will use some parameters to predict a categorical, meaning choosing within some set of options, output.
+
+Source: Lecture 1: Course overview and introduction
+
+## Question 3
+### Name two commonly used metrics for regression ML problems. Name two commonly used metrics for classification ML problems.
+Two commonly used regression metrics could be temperature and wind speed. Two commonly used classification metrics could be sleep stage (deep/light/REM/awake) or species. 
+
+## Question 4
+### As discussed, statistical models can be used for different purposes. These purposes can generally be classified into the following three categories. Provide a brief description of each.
+
+* Descriptive models: aims to better-communicate data, typically with a visualization
+
+* Inferential models: aims to develop knowledge and improve understanding by testing theories and showing causal relationships
+
+* Predictive models: aims to predict output as a function of outputs, without care for causal relationships between the inputs and outputs
+
+Source: Lecture 1: Course overview and introduction
+
+## Question 5
+### Predictive models are frequently used in machine learning, and they can usually be described as either mechanistic or empirically-driven. Answer the following questions.
+
+* Define mechanistic. Define empirically-driven. How do these model types differ? How are they similar?
+Mechanistic models assume some form (linear, logarithmic, etc.) for the function that predicts the outputs from the inputs. Parameters can be added or removed, but the given function will remain the same. Empirically-driven models do not specify a function or any assumptions about the relationship between inputs and outputs. They require considerably more data points than mechanistic ones. 
+
+* In general, is a mechanistic or empirically-driven model easier to understand? Explain your choice. Mechanistic models are typically easier to understand as their is a clearer relationship between the inputs and outputs. 
+
+* Describe how the bias-variance tradeoff is related to the use of mechanistic or empirically-driven models. Model errors are the sum of the bias, variance, and random noise. Empirically-driven models typically have more layers and significantly higher complexity than mechanistic ones. Increased  model complexity increases the variance error while decreasing model bias. The goal is to find a model that minimizes the total error, balancing the bias and variance. 
+
+## Question 6
+### A political candidate’s campaign has collected some detailed voter history data from their constituents. The campaign is interested in two questions:
+
+Given a voter’s profile/data, how likely is it that they will vote in favor of the candidate?
+
+How would a voter’s likelihood of support for the candidate change if they had personal contact with the candidate?
+
+Classify each question as either predictive or inferential. Explain your reasoning for each.
+
+I would classify question 1 as predictive. They simply want to know the likelihood of a voter voting for a given candidate with no reference to causation or why they will be voting in that way. 
+
+I would also classify question 2 as inferential, though I'm not positive. It seems like it's trying to develop a causal relationship between a personal conflict and voting preference.
+
+# Exploratory Data Analysis
+
+```{r}
+# loading in MPG data
+mpg_data = mpg
+```
+
+## Excercise 1
+### We are interested in highway miles per gallon, or the hwy variable. Create a histogram of this variable. Describe what you see/learn.
+
+```{r}
+# histogram of highway mpg
+ggplot(mpg_data, aes(x = hwy)) +
+  geom_histogram(binwidth = 3) +
+  labs(x = "Highway MPG", y = "Count")
+```
+
+Analysis: it seems like most cars either fall into a bin between 15-20 HWY-MPG or between 25-30 HWY-MPG, with a few outliers with <15 mpg or >35 mpg. This split could be trucks and large SUVs vs. sedans and smaller SUVs, but we'd need more analysis to be sure. It could also relate to vehicle age. 
+
+## Excercise 2
+### Create a scatterplot. Put hwy on the x-axis and cty on the y-axis. Describe what you notice. Is there a relationship between hwy and cty? What does this mean?
+
+```{r}
+# scatterplot hwy and cty
+ggplot(mpg_data, aes(x = hwy, y = cty)) +
+  geom_point() +
+  labs(x = "Highway MPG", y = "City MPG")
+```
+
+Analysis: there appears to be a somewhat linearly increasing relationship between Highway MPG and City MPG, which makes sense, as a cars fuel efficiency typically increases generally for both variables, rather than just for one. It means that cars with higher highway MPGs typically have higher city MPGs.
+
+## Excercise 3
+### Make a bar plot of manufacturer. Flip it so that the manufacturers are on the y-axis. Order the bars by height. Which manufacturer produced the most cars? Which produced the least?
+
+```{r}
+# bar plot of vehicles manufacturers
+manufacturers_sum = mpg_data %>% 
+  count(manufacturer, sort = TRUE) %>% 
+  mutate(manufacturer = fct_reorder(manufacturer, n))
+
+ggplot(manufacturers_sum, aes(x = manufacturer, y = n)) + 
+  geom_col() + 
+  labs(x = "Manufacturer", y = "Cars Produced") +
+  coord_flip()
+```
+
+Analysis: dodge produced the most cars, and lincoln produced the least
+
+## Excercise 4
+### Make a box plot of hwy, grouped by cyl. Do you see a pattern? If so, what?
+
+```{r}
+# boxplot of hwy group by cyl
+mpg_data$cyl = as.character(mpg_data$cyl)
+ggplot(mpg_data, aes(x = hwy, group = cyl, fill = cyl)) + 
+  geom_boxplot() +
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() 
+        ) + 
+  labs(x = "Highway MPG") +
+  guides(fill=guide_legend(title="Number of Cylinders"))
+```
+
+Analysis: it appears as though cars with less cylinders have better fuel efficiency.
+
+## Excercise 5
+### Use the corrplot package to make a lower triangle correlation matrix of the mpg dataset. 
+
+Which variables are positively or negatively correlated with which others? Do these relationships make sense to you? Are there any that surprise you?
+
+```{r}
+# corrplot of mpg dataset, corr only takes numeric data
+mpg_data$cyl = as.numeric(mpg_data$cyl)
+mpg_data_numeric_only = mpg_data %>% 
+  select(-c(manufacturer, model, trans, drv, fl, class))
+mpg_cor = cor(mpg_data_numeric_only)
+corrplot(mpg_cor, method = "square", type = "lower")
+```
+
+Analysis: number of cylinders and engine displacement are positively correlated, which makes sense as larger engines would be expected to displace more fluid. Both MPGs (hwy, cty) were negatively correlated to number of cylinders and engine displacement, which again make sense as more fuel consumption implies lower mpg. Again, MPGs were strongly correlated with each other. year was essentilly unrelated to all other variables. This makes sense as well as the dataset only goes from 1999 to 2008, in which time there was limited change in typicaly vehicle fuel efficiency. 
