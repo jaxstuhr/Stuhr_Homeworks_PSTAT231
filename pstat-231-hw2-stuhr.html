@@ -428,9 +428,9 @@ indicators.</p>
 <pre class="r"><code># generate recipe age as a function of all predictors
 abalone_recipe &lt;- recipe(age ~ ., data = abalone_train) %&gt;% 
   # dummy vars for nominal predictors
-  step_dummy(all_nominal_predictors()) %&gt;% 
+  step_dummy(type) %&gt;% 
   # set up interaction terms
-  step_interact(terms = ~ type:shucked_weight) %&gt;% 
+  step_interact(terms = ~ starts_with(&quot;type&quot;):shucked_weight) %&gt;% 
   step_interact(terms = ~ longest_shell:diameter) %&gt;% 
   step_interact(terms = ~ shucked_weight:shell_weight) %&gt;%
   # center
@@ -448,8 +448,66 @@ engine.</p>
 <div id="question-5" class="section level1">
 <h1>Question 5</h1>
 <p>Now:</p>
-<p>set up an empty workflow, add the model you created in Question 4,
-and add the recipe that you created in Question 3.</p>
+<ol style="list-style-type: decimal">
+<li><p>set up an empty workflow,</p></li>
+<li><p>add the model you created in Question 4, and</p></li>
+<li><p>add the recipe that you created in Question 3.</p></li>
+</ol>
+<pre class="r"><code># set up empty workflow
+lm_wflow &lt;- workflow() %&gt;% 
+  # add model
+  add_model(lm_model) %&gt;% 
+  # add recipe
+  add_recipe(abalone_recipe)</code></pre>
+</div>
+<div id="question-6" class="section level1">
+<h1>Question 6</h1>
+<p>Use your fit() object to predict the age of a hypothetical female
+abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30,
+whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight =
+1.</p>
+<pre class="r"><code>lm_fit &lt;- fit(lm_wflow, abalone_train)
+
+sample_abalone = abalone[0,] %&gt;% 
+  select(-age) %&gt;% 
+  add_row(type = &quot;F&quot;,  longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight = 1)
+
+sample_prediction &lt;- predict(lm_fit, new_data = sample_abalone)</code></pre>
+<p>Predicted Age: 24.8 years</p>
+</div>
+<div id="question-7" class="section level1">
+<h1>Question 7</h1>
+<p>Now you want to assess your model’s performance. To do this, use the
+yardstick package:</p>
+<ol style="list-style-type: decimal">
+<li><p>Create a metric set that includes R2, RMSE (root mean squared
+error), and MAE (mean absolute error).</p></li>
+<li><p>Use predict() and bind_cols() to create a tibble of your model’s
+predicted values from the training data along with the actual observed
+ages (these are needed to assess your model’s performance).</p></li>
+<li><p>Finally, apply your metric set to the tibble, report the results,
+and interpret the R2 value.</p></li>
+</ol>
+<pre class="r"><code># build metric set
+abalone_metrics &lt;- metric_set(rsq, rmse, mae)
+# predict ages for all data in training set
+abalone_train_ages &lt;- predict(lm_fit, new_data = abalone_train %&gt;% select(-age))
+# add original ages to data
+abalone_train_ages &lt;- bind_cols(abalone_train_ages, abalone_train %&gt;% select(age))
+# apply metrics
+abalone_metrics(abalone_train_ages, truth = age, 
+                estimate = .pred)</code></pre>
+<pre><code>## # A tibble: 3 × 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rsq     standard       0.550
+## 2 rmse    standard       2.17 
+## 3 mae     standard       1.56</code></pre>
+<p>RMSE = 2.18, mae = 1.566, , <span class="math inline">\(R^2\)</span>
+= .55</p>
+<p>This means that the model as able to explain 55% of the variation in
+age from the predicted variables, or that 45% of the variation was not
+well predicted by the model. It did not do a very good job.</p>
 </div>
 
 

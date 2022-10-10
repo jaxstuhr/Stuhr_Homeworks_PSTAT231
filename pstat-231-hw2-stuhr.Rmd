@@ -9,9 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidymodels)
-library(corrplot)
+library(yardstick)
 library(ggthemes)
-library(grid)
 library(here)
 ```
 
@@ -95,9 +94,11 @@ lm_model <- linear_reg() %>%
 
 Now:
 
-set up an empty workflow,
-add the model you created in Question 4, and
-add the recipe that you created in Question 3.
+1. set up an empty workflow,
+
+2. add the model you created in Question 4, and
+
+3. add the recipe that you created in Question 3.
 
 ```{r}
 # set up empty workflow
@@ -124,7 +125,37 @@ sample_prediction <- predict(lm_fit, new_data = sample_abalone)
 
 Predicted Age: 24.8 years
 
+# Question 7
 
+Now you want to assess your model’s performance. To do this, use the yardstick package:
 
+1. Create a metric set that includes R2, RMSE (root mean squared error), and MAE (mean absolute error).
 
+2. Use predict() and bind_cols() to create a tibble of your model’s predicted values from the training data along with the actual observed ages (these are needed to assess your model’s performance).
 
+3. Finally, apply your metric set to the tibble, report the results, and interpret the R2 value.
+
+```{r}
+# build metric set
+abalone_metrics <- metric_set(rsq, rmse, mae)
+# predict ages for all data in training set
+abalone_train_ages <- predict(lm_fit, new_data = abalone_train %>% select(-age))
+# add original ages to data
+abalone_train_ages <- bind_cols(abalone_train_ages, abalone_train %>% select(age))
+# apply metrics
+abalone_metrics(abalone_train_ages, truth = age, 
+                estimate = .pred)
+```
+
+RMSE = 2.18, mae = 1.566, , $R^2$ = .55
+
+This means that the model as able to explain 55% of the variation in age from the predicted variables, or that 45% of the variation was not well predicted by the model. It did not do a very good job.
+
+# Question 8
+Which term(s) in the bias-variance tradeoff above represent the reproducible error? Which term(s) represent the irreducible error?
+
+# Question 9
+Using the bias-variance tradeoff above, demonstrate that the expected test error is always at least as large as the irreducible error.
+
+# Question 10
+Prove the bias-variance tradeoff.
