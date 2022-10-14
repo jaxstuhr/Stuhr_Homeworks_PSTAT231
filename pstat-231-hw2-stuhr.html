@@ -374,8 +374,8 @@ display: none;
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>set.seed(23)</code></pre>
-<div id="question-1" class="section level1">
-<h1>Question 1</h1>
+<div id="question-1" class="section level2">
+<h2>Question 1</h2>
 <p>Your goal is to predict abalone age, which is calculated as the
 number of rings plus 1.5. Notice there currently is no age variable in
 the data set. Add age to the data set.</p>
@@ -404,8 +404,8 @@ ggplot(abalone, aes(x = age)) +
 abalone, which brings the mean age up to 11.4 years, and appears highly
 non-normal in its distribution.</p>
 </div>
-<div id="question-2" class="section level1">
-<h1>Question 2</h1>
+<div id="question-2" class="section level2">
+<h2>Question 2</h2>
 <p>Split the abalone data into a training set and a testing set. Use
 stratified sampling. You should decide on appropriate percentages for
 splitting the data.</p>
@@ -415,8 +415,8 @@ splitting the data.</p>
 abalone_train &lt;- training(abalone_split)
 abalone_test &lt;- testing(abalone_split)</code></pre>
 </div>
-<div id="question-3" class="section level1">
-<h1>Question 3</h1>
+<div id="question-3" class="section level2">
+<h2>Question 3</h2>
 <p>Using the training data, create a recipe predicting the outcome
 variable, age, with all other predictor variables. Note that you should
 not include rings to predict age. Explain why you shouldn’t use rings to
@@ -438,15 +438,15 @@ abalone_recipe &lt;- recipe(age ~ ., data = abalone_train) %&gt;%
   # scale
   step_scale(all_numeric_predictors())</code></pre>
 </div>
-<div id="question-4" class="section level1">
-<h1>Question 4</h1>
+<div id="question-4" class="section level2">
+<h2>Question 4</h2>
 <p>Create and store a linear regression object using the “lm”
 engine.</p>
 <pre class="r"><code>lm_model &lt;- linear_reg() %&gt;% 
   set_engine(&quot;lm&quot;)</code></pre>
 </div>
-<div id="question-5" class="section level1">
-<h1>Question 5</h1>
+<div id="question-5" class="section level2">
+<h2>Question 5</h2>
 <p>Now:</p>
 <ol style="list-style-type: decimal">
 <li><p>set up an empty workflow,</p></li>
@@ -460,8 +460,8 @@ lm_wflow &lt;- workflow() %&gt;%
   # add recipe
   add_recipe(abalone_recipe)</code></pre>
 </div>
-<div id="question-6" class="section level1">
-<h1>Question 6</h1>
+<div id="question-6" class="section level2">
+<h2>Question 6</h2>
 <p>Use your fit() object to predict the age of a hypothetical female
 abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30,
 whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight =
@@ -475,8 +475,8 @@ sample_abalone = abalone[0,] %&gt;%
 sample_prediction &lt;- predict(lm_fit, new_data = sample_abalone)</code></pre>
 <p>Predicted Age: 24.8 years</p>
 </div>
-<div id="question-7" class="section level1">
-<h1>Question 7</h1>
+<div id="question-7" class="section level2">
+<h2>Question 7</h2>
 <p>Now you want to assess your model’s performance. To do this, use the
 yardstick package:</p>
 <ol style="list-style-type: decimal">
@@ -508,6 +508,72 @@ abalone_metrics(abalone_train_ages, truth = age,
 <p>This means that the model as able to explain 55% of the variation in
 age from the predicted variables, or that 45% of the variation was not
 well predicted by the model. It did not do a very good job.</p>
+</div>
+<div id="questions-8-10" class="section level1">
+<h1>Questions 8-10</h1>
+<p>In lecture, we presented the general bias-variance tradeoff, which
+takes the form:</p>
+<p><span class="math display">\[
+E[(y_0 -
+\hat{f}(x_0))^2]=Var(\hat{f}(x_0))+[Bias(\hat{f}(x_0))]^2+Var(\epsilon)
+\]</span></p>
+<p>where the underlying model <span class="math inline">\(Y=f(X)+\epsilon\)</span> satisfies the
+following:</p>
+<ul>
+<li><span class="math inline">\(\epsilon\)</span> is a zero-mean random
+noise term and <span class="math inline">\(X\)</span> is non-random (all
+randomness in <span class="math inline">\(Y\)</span> comes from <span class="math inline">\(\epsilon\)</span>);</li>
+<li><span class="math inline">\((x_0, y_0)\)</span> represents a test
+observation, independent of the training set, drawn from the same
+model;</li>
+<li><span class="math inline">\(\hat{f}(.)\)</span> is the estimate of
+<span class="math inline">\(f\)</span> obtained from the training
+set.</li>
+</ul>
+<div id="question-8" class="section level2">
+<h2>Question 8</h2>
+<p>Which term(s) in the bias-variance tradeoff above represent the
+reproducible error? Which term(s) represent the irreducible error?</p>
+<p>The variance (<span class="math inline">\(Var(\hat{f}(x_0))\)</span>)
+and bias (<span class="math inline">\([Bias(\hat{f}(x_0))]^2\)</span>)
+terms represent reproducible errors, while <span class="math inline">\(Var(\epsilon)\)</span> is the irreducible
+error.</p>
+<p>Source: Linear Regression Slides</p>
+</div>
+<div id="question-9" class="section level2">
+<h2>Question 9</h2>
+<p>Using the bias-variance tradeoff above, demonstrate that the expected
+test error is always at least as large as the irreducible error.</p>
+<p>The variance term (<span class="math inline">\(Var(\hat{f}(x_0))\)</span>) is by-definition
+non-negative, and the bias term is squared (<span class="math inline">\([Bias(\hat{f}(x_0))]^2\)</span>) guaranteeing that
+it is also non-negative, therefore, the minimum value that the expected
+test MSE can take occurs when <span class="math inline">\(Var(\hat{f}(x_0)) = [Bias(\hat{f}(x_0))]^2 =
+0\)</span> which yields <span class="math inline">\(E[(y_0 -
+\hat{f}(x_0))^2] = Var(\epsilon)\)</span>, the irreducible error.</p>
+<p>Source: An Introduction to Statistical Learning with Applications in
+R (p32)</p>
+</div>
+<div id="question-10" class="section level2">
+<h2>Question 10</h2>
+<p>Prove the bias-variance tradeoff.</p>
+<p>Let <span class="math inline">\(x\)</span> be an unknown test point,
+<span class="math inline">\(f\)</span> be the true underlying function
+describing the relationship between <span class="math inline">\(y\)</span> and <span class="math inline">\(x\)</span>, and <span class="math inline">\(\epsilon\)</span> be any noise. The mean standard
+error (<span class="math inline">\(MSE\)</span>) of a given function
+<span class="math inline">\(\hat{f}(x)\)</span> is given by: <span class="math display">\[ E[(y - \hat{f}(x))^2] = E[(f(x) + \epsilon -
+\hat{f}(x))^2]\]</span> By multiplying through we get: <span class="math display">\[ E[(f(x) +  \hat{f}(x))^2] + E[\epsilon^2] +
+2E[f(x) - \hat{f}(x)] = Var(\epsilon) + E[(f(x) -
+\hat{f}(x))^2]\]</span> We can subtract and add the expectation of <span class="math inline">\(\hat{f}(x)\)</span> to the above equation to get:
+<span class="math display">\[ Var(\epsilon) + E[(E[\hat{f}(x)]-f(x))^2]
++ E[(\hat{f}(x)-E[\hat{f}(x))^2] - 2E[(f(x) -
+E[\hat{f}(x)])  *(\hat{f}(x) - E[\hat{f}(x)])]\]</span></p>
+<p>This last term can be rewritten as: <span class="math display">\[-2(f(x) -
+E[\hat{f}(x)])*(E[\hat{f}(x)]-E[\hat{f}(x)]) = 0\]</span> Thus we are
+left with: <span class="math display">\[Var(\epsilon) +
+E[(E[\hat{f}(x)]-f(x))^2] E[(\hat{f}(x)-E[\hat{f}(x))^2] = Var(\epsilon)
++ bias[\hat{f}(x)]^2 + var(\hat{f}(x))\]</span></p>
+<p>Source: <em>Towards Data Science: The Bias-Variance Tradeoff</em></p>
+</div>
 </div>
 
 
