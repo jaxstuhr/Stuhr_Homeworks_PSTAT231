@@ -289,16 +289,17 @@ In a binary classification problem, let $p$ represent the probability of class l
 
 ### Question 11
 
-Given that:
 
 $$
-p(z)=\frac{e^z}{1+e^z}
+p(z)=\frac{e^z}{1+e^z} = 1- \frac{1}{1+e^z}
 $$
 
-Prove that the inverse of a logistic function is indeed the *logit* function:
+$$
+=> 1-p = \frac{1}{1-e^z} => 1 + e^z = \frac{1}{1-p} => e^z = \frac{p}{1-p}
+$$
 
 $$
-z(p)=ln\left(\frac{p}{1-p}\right)
+=> ln(e^z)=ln\left(\frac{p}{1-p}\right) => z=ln\left(\frac{p}{1-p}\right)
 $$
 
 ### Question 12
@@ -307,3 +308,28 @@ Assume that $z = \beta_0 + \beta_{1}x_{1}$ and $p = logistic(z)$. How do the odd
 
 Assume now that $\beta_1$ is negative. What value does $p$ approach as $x_{1}$ approaches $\infty$? What value does $p$ approach as $x_{1}$ approaches $-\infty$?
 
+$$
+p(x_{1}) = 1-\frac{1}{1+e^{\beta_0 + \beta_{1}x_{1}}}
+$$
+$$
+p(x_{1}+2) = 1-\frac{1}{1+e^{\beta_0 + \beta_{1}x_{1} + 2\beta_{1}}}
+$$
+
+$$
+=> \Delta p = p(x_{1}+2) - p(x_{1}) = -\frac{1}{1+e^{\beta_0 + \beta_{1}x_{1} + 2\beta_{1}}} + \frac{1}{1+e^{\beta_0 + \beta_{1}x_{1}}}
+$$
+
+$$
+ = \frac{1}{1+e^{\beta_0} * e^{\beta_{1}x_{1}}} - \frac{1}{1+e^{\beta_0} * e^{\beta_{1}x_{1}}* e^ {2\beta_{1}}}
+$$
+
+$$ 
+=(e^{2\beta_{1}} - 1)* \frac{
+e^{\beta_0 + \beta_{1}x_{1}}}{
+1+e^{\beta_0 + \beta_{1}x_{1}}+e^{\beta_0 + \beta_{1}x_{1}+2\beta_{1}} +e^{2[\beta_0+\beta_{1}(1+x)]}
+}
+$$
+
+Thus if you increase $x_{1}$ by 2, if $\beta_1 > 0$ then $p$ will increase, if $\beta_1 < 0$ then $p$ will decrease, and if $\beta_1=0$ then $p$ will not change.
+
+Assuming $\beta_1 < 0$, as $x_{1}$ approaches $\infty$ $p$ will approach zero, and as $x_{1}$ approaches $-\infty$ $p$ will approach 1. 
