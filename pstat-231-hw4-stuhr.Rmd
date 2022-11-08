@@ -1,0 +1,234 @@
+---
+title: "Homework #4"
+author: "Jaxon Stuhr"
+date: "2022-11-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(tidymodels)
+library(yardstick)
+library(ggthemes)
+library(here)
+library(corrr)
+library(discrim)
+library(caret)
+library(yardstick)
+```
+
+### Resampling
+
+Read in _titanic_ data, set seed.
+
+```{r}
+# set seed for reproducibility
+set.seed(2246)
+# load in titanic data
+titanic_raw = read.csv(here("data", "titanic.csv")) %>% 
+  mutate(pclass = factor(pclass), 
+         survived = factor(survived, levels = c("Yes", "No") ))
+```
+
+### Question 1
+
+Split titanic data based on _survived_ into training and testing sets.
+
+```{r}
+titanic_split <- initial_split(titanic_raw, prop = 0.75,
+                                strata = "survived")
+titanic_train <- training(titanic_split)
+titanic_test <- testing(titanic_split)
+
+summary(titanic_train)
+
+sum(is.na(titanic_train$cabin))
+
+death_prop = sum(titanic_raw$survived == "No")/length(titanic_raw$survived)
+
+dim(titanic_train)
+dim(titanic_test)
+
+```
+
+### Question 2
+
+Fold training data with k = 10.
+
+```{r}
+# split training data into k=10 folds
+titanic_folds <- vfold_cv(titanic_train, v = 10)
+```
+
+### Question 3
+
+The above code is splitting the training data into 10 groups. We will then fit models to 9 of those groups at a time, and test them on the 10th (switching which "fold" is used for validation). This way we avoid the bias that would occur if we were to simply train and test a model on the same dataset. Using k-fold cross validation, all MSE values that are used to assess a model will be from testing on new data. If we did use the entire training set, we would not be doing any resampling as we would have k=1.
+
+### Question 4
+
+Build recipe and set up workflows for LR, LDA, and QDA models. 
+We will be fitting 30 models total, 3 models to each fold for 10 folds.
+
+```{r}
+# generate recipe age as a function of all predictors
+titanic_recipe <- recipe(survived ~ pclass + sex + age + sib_sp + parch + fare, data = titanic_train) %>% 
+  # add imputation for missing ages
+  step_impute_linear(age) %>% 
+  # dummy vars for nominal predictors
+  step_dummy(pclass, sex) %>% 
+  # set up interaction terms
+  step_interact(terms = ~ starts_with("sex"):fare) %>% 
+  step_interact(terms = ~ age:fare) %>%
+  # center
+  step_center(all_numeric_predictors()) %>%
+  # scale
+  step_scale(all_numeric_predictors())
+```
+
+```{r}
+# initialize LR model
+lr_model <- logistic_reg() %>% 
+  set_engine("glm")
+
+# build workflow
+lr_wflow <- workflow() %>%
+  add_model(lr_model) %>%
+  add_recipe(titanic_recipe)
+```
+
+```{r}
+# initialize LDA model
+lda_model <- discrim_linear() %>% 
+  set_engine("MASS")
+
+# build workflow
+lda_wflow <- workflow() %>% 
+  add_model(lda_model) %>% 
+  add_recipe(titanic_recipe)
+```
+
+```{r}
+# initialize QDA model
+qda_model <- discrim_quad() %>% 
+  set_engine("MASS")
+
+# build workflow
+qda_wflow <- workflow() %>% 
+  add_model(qda_model) %>% 
+  add_recipe(titanic_recipe)
+```
+
+### Question 5
+
+Fit all 3 models to 10 folds of training data.
+
+```{r}
+# fit LR to all samples
+lr_fit <- lr_wflow %>% 
+  fit_resamples(titanic_folds)
+
+# fit to all samples
+lda_fit <- lda_wflow %>% 
+  fit_resamples(titanic_folds)
+
+# fit to all samples
+qda_fit <- qda_wflow %>% 
+  fit_resamples(titanic_folds)
+```
+
+### Question 6
+
+Assess performance of all 3 models on folds and select best performing model based on accuracy and standard error. 
+
+```{r}
+#print LR metrics
+lr_acc = collect_metrics(lr_fit)
+lr_acc
+#print LDA metrics
+lda_acc = collect_metrics(lda_fit)
+lda_acc
+#print QDA metrics
+qda_acc = collect_metrics(qda_fit)
+qda_acc
+```
+
+```{r}
+# calculate % diff in accuracy and standard error
+acc_p_diff = abs((lr_acc$mean[1] - lda_acc$mean[1])/lr_acc$mean[1]*100)
+sd_p_diff = abs((lr_acc$std_err[1] - lda_acc$std_err[1])/lr_acc$std_err[1]*100)
+```
+
+The QDA model performed the worse, with the lowest mean accuracy and the highest standard error. The LR model and the LDA model performed very similarly, with the LR model having a `r round(acc_p_diff,3)`% higher accuracy and the LDA model having a `r round(sd_p_diff,3)`% lower standard error.
+
+I will decide that the _LDA model_ more consistently fits best due to it's significantly smaller standard error, even though the mean accuracy of the LR is slightly better. 
+
+### Question 7
+
+Fit LDA model to entire training dataset.
+
+```{r}
+# fit LDA model to full dataset
+lda_fit_full <- lda_wflow %>% 
+  fit(titanic_train)
+```
+
+### Question 8
+
+Assess LDA model accuracy on testing data and compare to accuracy on folds.
+
+```{r}
+# fit model and check performance on testing data
+lda_acc_testing <- metric_set(accuracy)
+# predict logistic regression vals
+titanic_lda_testing <- predict(lda_fit_full, new_data = titanic_test %>% dplyr::select(-survived))
+# add original survival data to new dataset
+titanic_lda_testing <- bind_cols(titanic_lda_testing, titanic_test %>% dplyr::select(survived))
+# check accuracy
+lda_test_acc = lda_acc_testing(titanic_lda_testing, truth = survived, 
+                estimate = .pred_class)
+lda_test_acc
+```
+
+```{r}
+lda_p_diff = abs((lda_test_acc$.estimate - lda_acc$mean[1])/lda_test_acc$.estimate*100)
+lda_p_diff
+```
+
+
+Our LDA model had an accuracy of `r round(lda_test_acc$.estimate, 3)` on the testing data, compared to a mean accuracy of `r round(lda_acc$mean[1],3)` on the 10 training folds, only a `r round(lda_p_diff,2)`% difference!
+
+### 231 Students Only
+
+Consider the following intercept-only model, with $\epsilon \sim N(0, \sigma^2)$:
+
+$$
+Y=\beta+\epsilon
+$$
+
+where $\beta$ is the parameter that we want to estimate. Suppose that we have $n$ observations of the response, i.e. $y_{1}, ..., y_{n}$, with uncorrelated errors.
+
+### Question 9
+
+Derive the least-squares estimate of $\beta$.
+
+We want to minimize: 
+$$ SSE = \sum_{i=1}^{n}(Y_{i} - \hat{Y})^2$$
+
+Where $Y_{i}$ are our observations, and  $\hat{Y} = \beta + \epsilon$. Differentiating and seeting to zero we get:
+
+$$\frac{d}{d\beta} SSE = \frac{d}{d\beta}\sum_{i=1}^{n}[-\beta+(Y_i - \epsilon)] = 0$$
+
+$$=> \sum_{i=1}^{n}[2(\beta + Y_i - \epsilon)] = 0
+$$
+Because $\epsilon$ is normally distributed about zero, we can assume it drops out of the above equation for large n. This leaves:
+
+$$ \sum_{i=1}^{n} \beta = n\beta=  \sum_{i=1}^{n}Y_i => \beta = \frac{\sum_{i=1}^{n}Y_i}{n} = mean(Y)
+$$
+
+### Question 10
+
+Suppose that we perform leave-one-out cross-validation (LOOCV). Recall that, in LOOCV, we divide the data into $n$ folds. What is the covariance between $\hat{\beta}^{(1)}$, or the least-squares estimator of $\beta$ that we obtain by taking the first fold as a training set, and $\hat{\beta}^{(2)}$, the least-squares estimator of $\beta$ that we obtain by taking the second fold as a training set?
+
+$$Cov(\hat{\beta}^{(1)}, \hat{\beta}^{(2)}) = \frac{\sum_{i=1}^{n-1}(Y_i^{(1)} -\hat{\beta}^{(1)} )(Y_i^{(2)} -\hat{\beta}^{(2)} )  }{n-1}$$
+
