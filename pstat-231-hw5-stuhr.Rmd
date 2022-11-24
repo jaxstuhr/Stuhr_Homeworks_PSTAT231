@@ -191,3 +191,33 @@ The model performed best when predicting Normal, Bug, Grass and Psychic pokemon 
 
 In the 2020-2021 season, Stephen Curry, an NBA basketball player, made 337 out of 801 three point shot attempts (42.1%). Use bootstrap resampling on a sequence of 337 1’s (makes) and 464 0’s (misses). For each bootstrap sample, compute and save the sample mean (e.g. bootstrap FG% for the player). Use 1000 bootstrap samples to plot a histogram of those values. Compute the 99% bootstrap confidence interval for Stephen Curry’s “true” end-of-season
 FG% using the quantile function in R. Print the endpoints of this interval.
+
+```{r}
+# build sequence of Steph Curries makes and misses
+makes = matrix(data = 1, nrow = 337, ncol = 1) 
+misses = matrix(data = 0, nrow = 464, ncol = 1)
+shots = rbind(makes, misses) 
+```
+
+```{r}
+# take 1000 samples and calculate means from sequence
+means = matrix(data = 0, nrow = 1000, ncol = 1)
+for (i in 1:1000) {
+  means[i] = mean(sample(shots, replace = TRUE))
+}
+means = data.frame(means)
+```
+
+```{r}
+# plot distribution of mean 3 pt %
+ggplot(means, aes(x = means)) +
+  geom_histogram(bins = 20) + 
+  labs(x = "Mean 3-Pt %", y = "Count")
+```
+
+```{r}
+# calculate 99% confidence interval
+quantile(means$means, probs = c(.005, .995) )
+```
+
+The endpoint shooting percentages of the 99% confidence interval are [37.3%, 47.1%]
